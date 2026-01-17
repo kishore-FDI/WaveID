@@ -1,0 +1,48 @@
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# Go module cache (local only)
+vendor/
+
+# WASM outputs
+*.wasm
+
+# Frontend build artifacts
+dist/
+build/
+node_modules/
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Environment
+.env
+.env.local
+
+# Media
+*.mp3
+*.mp4
