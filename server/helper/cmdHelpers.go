@@ -131,7 +131,7 @@ func convertAudio(inputPath, outputPath string) {
 		bin,
 		"-i", inputPath,
 		"-ac", "1",
-		"-ar", "11050",
+		"-ar", "11025",
 		outputPath,
 	)
 	// cmd.Stderr = os.Stderr

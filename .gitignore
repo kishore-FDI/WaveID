@@ -31,7 +31,7 @@ node_modules/
 
 # OS
 .DS_Store
-Thumbs.db
+*.db
 # Logs
 *.log
 
@@ -46,3 +46,11 @@ temp/
 # Media
 *.mp3
 *.mp4
+*.wav
+*.avi
+
+processedAudios/
+*.wav
+*.db
+example.json
+output.json
