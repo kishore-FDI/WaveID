@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"shazam/db"
+	"shazam/dsp"
 	"shazam/utils"
 	"strings"
 )
@@ -42,17 +44,23 @@ func DownloadSongs(jsonPath string, client *db.SQLiteClient) {
 			"-x",
 			"--audio-format", "mp3",
 			"-o", out,
+			"--print", "after_move:filepath",
 			url,
 		)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
+		output, err := cmd.Output()
+		if err != nil {
 			panic(err)
 		}
 
-		if err := client.AddSong(songs[i]); err != nil {
+		// Get the actual file path from yt-dlp output
+		songs[i].SongPath = strings.TrimSpace(string(output))
+
+		songID, err := client.AddSong(songs[i])
+		if err != nil {
 			panic(err)
 		}
+		fingerprints, err := dsp.FingerPrint(songs[i].SongPath, songID)
+		fmt.Print(fingerprints)
 	}
 
 }

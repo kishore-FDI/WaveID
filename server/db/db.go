@@ -39,7 +39,8 @@ func createTables(db *sql.DB) error {
         title TEXT NOT NULL,
         artist TEXT NOT NULL,
         ytID TEXT,
-        key TEXT NOT NULL UNIQUE
+        key TEXT NOT NULL UNIQUE,
+        songpath TEXT NOT NULL
     );
     `
 
@@ -65,14 +66,18 @@ func createTables(db *sql.DB) error {
 	return nil
 }
 
-func (db *SQLiteClient) AddSong(song utils.Song) error {
+func (db *SQLiteClient) AddSong(song utils.Song) (int64, error) {
 	key := song.Key
 	if key == "" {
 		key = utils.GenerateSongKey(song.Title, song.Artist)
 	}
-	_, err := db.db.Exec("INSERT OR IGNORE INTO songs (title, artist, ytID, key) VALUES (?, ?, ?, ?)", song.Title, song.Artist, song.YtID, key)
+	result, err := db.db.Exec("INSERT OR IGNORE INTO songs (title, artist, ytID, key, songpath) VALUES (?, ?, ?, ?, ?)", song.Title, song.Artist, song.YtID, key, song.SongPath)
 	if err != nil {
-		return fmt.Errorf("error adding song: %s", err)
+		return 0, fmt.Errorf("error adding song: %s", err)
 	}
-	return nil
+	songID, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("error getting song ID: %s", err)
+	}
+	return songID, nil
 }
