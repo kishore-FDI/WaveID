@@ -1,56 +1,26 @@
-# Go build artifacts
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-
-# Go workspace
-go.work
-go.work.sum
-
-# Go module cache (local only)
-vendor/
-
-# WASM outputs
-*.wasm
-
-# Frontend build artifacts
-dist/
-build/
-node_modules/
-
-# IDE/editor
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-*.db
-# Logs
-*.log
-
-# Temporary files
-tmp/
-temp/
-
-# Environment
+# Environment files
 .env
 .env.local
+.env.development
+.env.test
+.env.production
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Media
+# Audio / media files
 *.mp3
-*.mp4
 *.wav
-*.avi
+*.ogg
+*.flac
+*.m4a
+*.m4b
+*.m4p
+*.m4v
+*.m4w
+*.m4x
+*.m4y
+*.m4z
 
-processedAudios/
-*.wav
+# Databases
 *.db
-example.json
-output.json
