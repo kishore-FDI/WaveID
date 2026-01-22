@@ -76,9 +76,21 @@ func (db *SQLiteClient) AddSong(song types.Song) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("error adding song: %s", err)
 	}
-	songID, err := result.LastInsertId()
+	rows, err := result.RowsAffected()
 	if err != nil {
-		return 0, fmt.Errorf("error getting song ID: %s", err)
+		return 0, fmt.Errorf("error checking insert: %s", err)
+	}
+	var songID int64
+	if rows > 0 {
+		songID, err = result.LastInsertId()
+		if err != nil {
+			return 0, fmt.Errorf("error getting song ID: %s", err)
+		}
+	} else {
+		err = db.db.QueryRow("SELECT id FROM songs WHERE key = ?", key).Scan(&songID)
+		if err != nil {
+			return 0, fmt.Errorf("duplicate key but song not found: %s", err)
+		}
 	}
 	return songID, nil
 }
