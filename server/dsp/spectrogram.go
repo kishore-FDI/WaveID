@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/cmplx"
+	types "shazam/servertypes"
 
 	"github.com/mjibson/go-dsp/fft"
 )
@@ -99,4 +100,70 @@ func Spectrogram(sample []float64, sampleRate int) ([][]float64, error) {
 		spectrogram = append(spectrogram, magnitude)
 	}
 	return spectrogram, nil
+}
+
+// ExtractPeaks analyzes a spectrogram and extracts significant peaks in the frequency domain over time.
+func ExtractPeaks(spectrogram [][]float64, audioDuration float64, sampleRate int) []types.Peak {
+	if len(spectrogram) < 1 {
+		return []types.Peak{}
+	}
+
+	type maxies struct {
+		maxMag  float64
+		freqIdx int
+	}
+
+	bands := []struct{ min, max int }{
+		{0, 10}, {10, 20}, {20, 40}, {40, 80}, {80, 160}, {160, 512},
+	}
+
+	var peaks []types.Peak
+	frameDuration := audioDuration / float64(len(spectrogram))
+
+	// Calculate frequency resolution (Hz per bin)
+	effectiveSampleRate := float64(targetSampleRate)
+	freqResolution := effectiveSampleRate / float64(windowSize)
+
+	for frameIdx, frame := range spectrogram {
+		var maxMags []float64
+		var freqIndices []int
+
+		binBandMaxies := []maxies{}
+		for _, band := range bands {
+			var maxx maxies
+			var maxMag float64
+			for idx, mag := range frame[band.min:band.max] {
+				if mag > maxMag {
+					maxMag = mag
+					freqIdx := band.min + idx
+					maxx = maxies{mag, freqIdx}
+				}
+			}
+			binBandMaxies = append(binBandMaxies, maxx)
+		}
+
+		for _, value := range binBandMaxies {
+			maxMags = append(maxMags, value.maxMag)
+			freqIndices = append(freqIndices, value.freqIdx)
+		}
+
+		// Calculate the average magnitude
+		var maxMagsSum float64
+		for _, max := range maxMags {
+			maxMagsSum += max
+		}
+		avg := maxMagsSum / float64(len(maxMags))
+
+		// Add peaks that exceed the average magnitude
+		for i, value := range maxMags {
+			if value > avg {
+				peakTime := float64(frameIdx) * frameDuration
+				peakFreq := float64(freqIndices[i]) * freqResolution
+
+				peaks = append(peaks, types.Peak{Time: peakTime, Freq: peakFreq})
+			}
+		}
+	}
+
+	return peaks
 }

@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	types "shazam/servertypes"
 	"shazam/utils"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -66,7 +67,7 @@ func createTables(db *sql.DB) error {
 	return nil
 }
 
-func (db *SQLiteClient) AddSong(song utils.Song) (int64, error) {
+func (db *SQLiteClient) AddSong(song types.Song) (int64, error) {
 	key := song.Key
 	if key == "" {
 		key = utils.GenerateSongKey(song.Title, song.Artist)
@@ -80,4 +81,27 @@ func (db *SQLiteClient) AddSong(song utils.Song) (int64, error) {
 		return 0, fmt.Errorf("error getting song ID: %s", err)
 	}
 	return songID, nil
+}
+
+func (db *SQLiteClient) AddFingerPrints(fingerprints map[uint32]types.Couple) error {
+	tx, err := db.db.Begin()
+	if err != nil {
+		return fmt.Errorf("error starting transaction: %s", err)
+	}
+
+	stmt, err := tx.Prepare("INSERT OR REPLACE INTO fingerprints (address, anchorTimeMs, songID) VALUES (?, ?, ?)")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error preparing statement: %s", err)
+	}
+	defer stmt.Close()
+
+	for address, couple := range fingerprints {
+		if _, err := stmt.Exec(address, couple.AnchorTimeMs, couple.SongID); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("error executing statement: %s", err)
+		}
+	}
+
+	return tx.Commit()
 }

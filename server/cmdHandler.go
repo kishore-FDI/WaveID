@@ -2,13 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"shazam/db"
 	"shazam/dsp"
-	"shazam/utils"
+	types "shazam/servertypes"
 	"strings"
 )
 
@@ -18,7 +17,7 @@ func DownloadSongs(jsonPath string, client *db.SQLiteClient) {
 		panic(err)
 	}
 
-	var songs []utils.Song
+	var songs []types.Song
 	if err := json.Unmarshal(b, &songs); err != nil {
 		panic(err)
 	}
@@ -60,7 +59,10 @@ func DownloadSongs(jsonPath string, client *db.SQLiteClient) {
 			panic(err)
 		}
 		fingerprints, err := dsp.FingerPrint(songs[i].SongPath, songID)
-		fmt.Print(fingerprints)
+		dbErr := client.AddFingerPrints(fingerprints)
+		if dbErr != nil {
+			panic(dbErr)
+		}
 	}
 
 }

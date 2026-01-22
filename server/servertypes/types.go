@@ -1,4 +1,4 @@
-package utils
+package servertypes
 
 type Song struct {
 	Title    string `json:"title"`
@@ -43,4 +43,9 @@ type WavInfo struct {
 	Duration       float64
 	Data           []byte
 	ChannelSamples []float64
+}
+
+type Peak struct {
+	Freq float64 // Frequency in Hz
+	Time float64 // Time in seconds
 }

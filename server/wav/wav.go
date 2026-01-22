@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	types "shazam/servertypes"
 	"shazam/utils"
 	"strings"
 )
@@ -51,7 +52,7 @@ func ConvertToWAV(inputFilePath string) (wavFilePath string, err error) {
 	return outputFile, nil
 }
 
-func ReadWavInfo(filename string) (*utils.WavInfo, error) {
+func ReadWavInfo(filename string) (*types.WavInfo, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -60,7 +61,7 @@ func ReadWavInfo(filename string) (*utils.WavInfo, error) {
 		return nil, errors.New("invalid WAV file size (too small)")
 	}
 
-	var header utils.WavHeader
+	var header types.WavHeader
 	if err := binary.Read(bytes.NewReader(data[:44]), binary.LittleEndian, &header); err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func ReadWavInfo(filename string) (*utils.WavInfo, error) {
 		return nil, errors.New("unsupported bits-per-sample (expect 16-bit PCM)")
 	}
 
-	info := &utils.WavInfo{
+	info := &types.WavInfo{
 		Channels:   1,
 		SampleRate: int(header.SampleRate),
 		Data:       data[44:],
