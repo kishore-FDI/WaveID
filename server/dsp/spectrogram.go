@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/cmplx"
+
+	"github.com/mjibson/go-dsp/fft"
 )
 
 const (
@@ -74,6 +77,26 @@ func Spectrogram(sample []float64, sampleRate int) ([][]float64, error) {
 	for i := range window {
 		window[i] = 0.5 - 0.5*math.Cos(2*math.Pi*float64(i)/float64(windowSize-1))
 	}
-	fmt.Print(downSampledOutput)
-	return nil, nil
+	spectrogram := make([][]float64, 0)
+	for start := 0; start+windowSize <= len(downSampledOutput); start += hopSize {
+		end := start + windowSize
+
+		frame := make([]float64, windowSize)
+		copy(frame, downSampledOutput[start:end])
+
+		for i := range frame {
+			frame[i] *= window[i]
+		}
+
+		fftResult := fft.FFTReal(frame)
+
+		// Convert complex spectrum to magnitude spectrum
+		magnitude := make([]float64, len(fftResult)/2)
+		for j := range magnitude {
+			magnitude[j] = cmplx.Abs(fftResult[j])
+		}
+
+		spectrogram = append(spectrogram, magnitude)
+	}
+	return spectrogram, nil
 }
