@@ -2,7 +2,9 @@ package utils
 
 import (
 	"io"
+	"math/rand"
 	"os"
+	"time"
 )
 
 func MkDir(path string) error {
@@ -55,4 +57,11 @@ func MoveFile(src, dst string) error {
 
 func GenerateSongKey(songTitle, songArtist string) string {
 	return songTitle + "---" + songArtist
+}
+
+func GenerateUniqueID() uint32 {
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Uint32()
+
+	return randomNumber
 }

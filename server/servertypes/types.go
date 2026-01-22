@@ -13,6 +13,15 @@ type Couple struct {
 	SongID       uint32
 }
 
+type Match struct {
+	SongID     uint32
+	SongTitle  string
+	SongArtist string
+	YouTubeID  string
+	Timestamp  uint32
+	Score      float64
+}
+
 type RecordData struct {
 	Audio      string  `json:"audio"`
 	Duration   float64 `json:"duration"`
