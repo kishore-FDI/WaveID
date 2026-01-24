@@ -19,12 +19,6 @@ func main() {
 		panic(err)
 	}
 
-	// Check if running HTTP server mode
-	if len(os.Args) > 1 && os.Args[1] == "server" {
-		setupHTTPServer("RECORDINGS_DIR")
-		return
-	}
-
 	dbPath := filepath.Join("PROCESSED_DIR", "shazam.db")
 	client, err := db.NewSQLiteClient(dbPath)
 	if err != nil {
@@ -32,7 +26,7 @@ func main() {
 	}
 	defer client.Close()
 
-	if len(os.Args) < 3 {
+	if len(os.Args) < 2 {
 		fmt.Println("usage: <program> <option> <arg>")
 		fmt.Println("  or:  <program> server  (to start HTTP server)")
 		return
@@ -51,6 +45,8 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Successfully removed %d orphaned fingerprints\n", removed)
+	case "server":
+		setupHTTPServer("RECORDINGS_DIR")
 	default:
 		fmt.Println("Choose a valid option")
 		fmt.Println("  Options:")

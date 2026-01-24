@@ -12,11 +12,18 @@ import (
 	"shazam/utils"
 	"shazam/wav"
 	"strings"
+	"sync"
 
 	"github.com/fatih/color"
 )
 
 var yellow = color.New(color.FgYellow)
+
+type ProcessingResult struct {
+	Song         types.Song
+	Fingerprints map[uint32]types.Couple
+	Error        error
+}
 
 func DownloadSongs(jsonPath string, client *db.SQLiteClient) {
 	b, err := os.ReadFile(jsonPath)
@@ -31,47 +38,110 @@ func DownloadSongs(jsonPath string, client *db.SQLiteClient) {
 
 	outDir := "SONGS_DIR"
 
+	results := make(chan ProcessingResult, len(songs))
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		dbWriter(client, results)
+	}()
+
+	numWorkers := 4
+	semaphore := make(chan struct{}, numWorkers)
+
 	for i := range songs {
-		if songs[i].YtID == "" {
-			q := songs[i].Title + " " + songs[i].Artist
-			cmd := exec.Command("yt-dlp", "ytsearch1:"+q, "--get-id")
-			idb, err := cmd.Output()
-			if err != nil {
-				panic(err)
-			}
-			songs[i].YtID = strings.TrimSpace(string(idb))
-		}
+		wg.Add(1)
+		go func(song types.Song) {
+			defer wg.Done()
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
 
-		url := "https://www.youtube.com/watch?v=" + songs[i].YtID
-		out := filepath.Join(outDir, "%(title)s.%(ext)s")
-
-		cmd := exec.Command(
-			"yt-dlp",
-			"-x",
-			"--audio-format", "mp3",
-			"-o", out,
-			"--print", "after_move:filepath",
-			url,
-		)
-		output, err := cmd.Output()
-		if err != nil {
-			panic(err)
-		}
-
-		// Get the actual file path from yt-dlp output
-		songs[i].SongPath = strings.TrimSpace(string(output))
-
-		songID, err := client.AddSong(songs[i])
-		if err != nil {
-			panic(err)
-		}
-		fingerprints, err := dsp.FingerPrint(songs[i].SongPath, songID)
-		dbErr := client.AddFingerPrints(fingerprints)
-		if dbErr != nil {
-			panic(dbErr)
-		}
+			result := processSong(song, outDir)
+			results <- result
+		}(songs[i])
 	}
 
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	wg.Wait()
+}
+
+func processSong(song types.Song, outDir string) ProcessingResult {
+	result := ProcessingResult{Song: song}
+
+	if song.YtID == "" {
+		q := song.Title + " " + song.Artist
+		cmd := exec.Command("yt-dlp", "ytsearch1:"+q, "--get-id")
+		idb, err := cmd.Output()
+		if err != nil {
+			result.Error = fmt.Errorf("error getting YouTube ID for %s: %v", q, err)
+			return result
+		}
+		song.YtID = strings.TrimSpace(string(idb))
+		result.Song.YtID = song.YtID
+	}
+
+	url := "https://www.youtube.com/watch?v=" + song.YtID
+	out := filepath.Join(outDir, "%(title)s.%(ext)s")
+
+	cmd := exec.Command(
+		"yt-dlp",
+		"-x",
+		"--audio-format", "mp3",
+		"-o", out,
+		"--print", "after_move:filepath",
+		url,
+	)
+	output, err := cmd.Output()
+	if err != nil {
+		result.Error = fmt.Errorf("error downloading song %s: %v", song.Title, err)
+		return result
+	}
+
+	songPath := strings.TrimSpace(string(output))
+	result.Song.SongPath = songPath
+
+	fingerprints, err := dsp.FingerPrint(songPath, 0)
+	if err != nil {
+		result.Error = fmt.Errorf("error generating fingerprints for %s: %v", song.Title, err)
+		return result
+	}
+
+	result.Fingerprints = fingerprints
+	return result
+}
+
+func dbWriter(client *db.SQLiteClient, results <-chan ProcessingResult) {
+	for result := range results {
+		if result.Error != nil {
+			yellow.Printf("Error processing song %s: %v\n", result.Song.Title, result.Error)
+			continue
+		}
+
+		songID, err := client.AddSong(result.Song)
+		if err != nil {
+			yellow.Printf("Error adding song %s to database: %v\n", result.Song.Title, err)
+			continue
+		}
+
+		updatedFingerprints := make(map[uint32]types.Couple)
+		for address, couple := range result.Fingerprints {
+			couple.SongID = uint32(songID)
+			updatedFingerprints[address] = couple
+		}
+
+		err = client.AddFingerPrints(updatedFingerprints)
+		if err != nil {
+			yellow.Printf("Error adding fingerprints for song %s: %v\n", result.Song.Title, err)
+			continue
+		}
+
+		fmt.Printf("Successfully processed song: %s by %s\n", result.Song.Title, result.Song.Artist)
+	}
 }
 
 func find(filePath string) {

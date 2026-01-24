@@ -23,6 +23,7 @@ interface UploadResponse {
     songTitle: string
     songArtist: string
     score: number
+    timestamp: number
   }
   findError?: string
 }
@@ -325,17 +326,30 @@ function App() {
               <div className="success-state">
                 <div className="success-icon">✓</div>
                 <p className="success-message">Audio saved successfully!</p>
-                {topMatch && (
-                  <div className="top-match">
-                    <h3>🎵 Match Found!</h3>
-                    <div className="match-card">
-                      <div className="match-title">{topMatch.songTitle}</div>
-                      <div className="match-artist">by {topMatch.songArtist}</div>
-                      <div className="match-score">Score: {topMatch.score.toFixed(2)}</div>
-                    </div>
+                {matches.length > 0 && (
+                  <div className="top-matches">
+                    <h3>🎵 Top Matches!</h3>
+                    {matches.slice(0, 2).map((match, index) => (
+                      <div key={match.songId} className="match-container">
+                        <div className="match-card">
+                          <div className="match-title">{match.songTitle}</div>
+                          <div className="match-artist">by {match.songArtist}</div>
+                          <div className="match-score">Score: {match.score.toFixed(2)}</div>
+                          <div className="match-timestamp">Match at: {Math.floor(match.timestamp / 1000)}s</div>
+                        </div>
+                        <iframe
+                          className="youtube-iframe"
+                          src={`https://www.youtube.com/embed/${match.youtubeId}?start=${Math.floor(match.timestamp / 1000)}`}
+                          title="YouTube video player"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    ))}
                   </div>
                 )}
-                {matches.length === 0 && !topMatch && (
+                {matches.length === 0 && (
                   <div className="no-matches">
                     <p>No matches found in the database.</p>
                   </div>
@@ -388,27 +402,6 @@ function App() {
             )}
           </div>
         </div>
-
-        {matches.length > 0 && status === 'success' && (
-          <div className="matches-section">
-            <h2>All Matches ({matches.length})</h2>
-            {searchDuration && (
-              <p className="search-info">Search took: {searchDuration}</p>
-            )}
-            <div className="matches-list">
-              {matches.slice(0, 10).map((match, index) => (
-                <div key={match.songId} className="match-item">
-                  <div className="match-rank">#{index + 1}</div>
-                  <div className="match-details">
-                    <div className="match-title-small">{match.songTitle}</div>
-                    <div className="match-artist-small">by {match.songArtist}</div>
-                  </div>
-                  <div className="match-score-small">{match.score.toFixed(2)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         <footer>
           <p className="info-text">

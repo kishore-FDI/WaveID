@@ -1,7 +1,6 @@
 package dsp
 
 import (
-	"fmt"
 	types "shazam/servertypes"
 	"shazam/wav"
 )
@@ -55,7 +54,7 @@ func FingerPrint(songPath string, songID int64) (map[uint32]types.Couple, error)
 		panic(err)
 	}
 	wavInfo, err := wav.ReadWavInfo(wavFilePath)
-	fmt.Print(wavInfo.SampleRate)
+	// fmt.Print(wavInfo.SampleRate)
 	spectro, err := Spectrogram(wavInfo.ChannelSamples, wavInfo.SampleRate)
 	if err != nil {
 		return nil, err
