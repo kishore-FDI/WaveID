@@ -1,57 +1,53 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
-	"shazam/db"
-	"shazam/utils"
+)
+
+const (
+	SONGS_DIR   = "songs"
+	MAX_WORKERS = 5
+	DB_PATH     = "shazam.db"
 )
 
 func main() {
-	if err := utils.MkDir("SONGS_DIR"); err != nil {
-		panic(err)
-	}
-	if err := utils.MkDir("PROCESSED_DIR"); err != nil {
-		panic(err)
-	}
-	if err := utils.MkDir("RECORDINGS_DIR"); err != nil {
-		panic(err)
-	}
-
-	dbPath := filepath.Join("PROCESSED_DIR", "shazam.db")
-	client, err := db.NewSQLiteClient(dbPath)
-	if err != nil {
-		panic(err)
-	}
-	defer client.Close()
+	fmt.Println("Starting the Project Server...")
 
 	if len(os.Args) < 2 {
-		fmt.Println("usage: <program> <option> <arg>")
-		fmt.Println("  or:  <program> server  (to start HTTP server)")
-		return
+		fmt.Println("Error: No configuration file provided.")
+		os.Exit(1)
 	}
-
-	fmt.Print("Starting the project")
+	err := os.MkdirAll(SONGS_DIR, 0755)
+	if err != nil {
+		fmt.Printf("Error creating songs directory: %v\n", err)
+		os.Exit(1)
+	}
 
 	switch os.Args[1] {
-	case "1":
-		DownloadSongs(os.Args[2], client)
-	case "cleanup":
-		fmt.Println("Cleaning up orphaned fingerprints...")
-		removed, err := client.CleanupOrphanedFingerprints()
-		if err != nil {
-			fmt.Printf("Error cleaning up orphaned fingerprints: %v\n", err)
+	case "find":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: main.go find <path_to_wav_file>")
 			os.Exit(1)
 		}
-		fmt.Printf("Successfully removed %d orphaned fingerprints\n", removed)
-	case "server":
-		setupHTTPServer("RECORDINGS_DIR")
+		filePath := os.Args[2]
+		find(filePath)
+	case "download":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: go run main.go download example.json")
+			os.Exit(1)
+		}
+		url := os.Args[2]
+		download(url)
+	case "serve":
+		serveCmd := flag.NewFlagSet("serve", flag.ExitOnError)
+		protocol := serveCmd.String("proto", "http", "Protocol to use (http or https)")
+		port := serveCmd.String("p", "5000", "Port to use")
+		serveCmd.Parse(os.Args[2:])
+		serve(*protocol, *port)
 	default:
-		fmt.Println("Choose a valid option")
-		fmt.Println("  Options:")
-		fmt.Println("    1 <json_path>  - Download and process songs from JSON file")
-		fmt.Println("    cleanup         - Remove orphaned fingerprints from database")
-		fmt.Println("    server         - Start HTTP server")
+		fmt.Println("Unknown command. Available commands: find")
 	}
+
 }
