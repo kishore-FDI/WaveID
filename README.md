@@ -6,7 +6,6 @@ That was a small demo on how the project works :)
 
 ### So Here is how it works
 
-The audio is stored in PCM format
+The audio is stored in stereo format. This format is what also us to make the song imerssive (If you have ever listened to 8D audio or in theaters) you would know. We have to convert this to mono so we can process all the audio data together.
 
-<img width="1024" height="1024" alt="Gemini_Generated_Image_fnb0egfnb0egfnb0" src="https://github.com/user-attachments/assets/5b83865e-f4e7-4bf5-bbfa-82d90259ef2f" />
-
+`ffmpeg -i input.mp3 -ac 1 output_mono.mp3`
