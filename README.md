@@ -144,14 +144,4 @@ If many hashes point to the same song **with the same offset**,
 * Extremely fast lookup
 * Proven technique (used by Shazam itself)
 
----
-
-If you want, next I can:
-
-* Tighten the language even more (README polish)
-* Add **GIF placement suggestions** (where animations help most)
-* Write a **“Project Architecture”** or **“Future Improvements”** section
-* Or adapt this README for **GitHub stars bait ⭐**
-
-
 
